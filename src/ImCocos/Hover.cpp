@@ -1,6 +1,9 @@
 // from https://github.com/Alphalaneous/Creative-Mode/blob/main/src/hooks/CCEGLView.hpp
 #include "Hover.hpp"
 #include <Geode/Geode.hpp>
+#ifdef __APPLE__
+	#include "Hover.mm"
+#endif
 using namespace geode::prelude;
 
 void Hover::addHoverableItem(HoverItemBase *item) {
@@ -98,20 +101,6 @@ public:
         Hover::get()->updateHover(pos.x, pos.y);
     }
 };
-#endif
-
-#ifdef GEODE_IS_ANDROID
-auto listener = cocos2d::EventListenerTouchOneByOne::create();
-listener->onTouchBegan = [](cocos2d::Touch* touch, cocos2d::Event* event) -> bool {
-    auto location = touch->getLocation();
-    Hover::get()->updateHover(location.x, location.y);
-    return true;
-};
-listener->onTouchMoved = [](cocos2d::Touch* touch, cocos2d::Event* event) {
-    auto location = touch->getLocation();
-    Hover::get()->updateHover(location.x, location.y);
-};
-_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, yourTargetNode);
 #endif
 
 
