@@ -1,9 +1,6 @@
 // from https://github.com/Alphalaneous/Creative-Mode/blob/main/src/hooks/CCEGLView.hpp
 #include "Hover.hpp"
 #include <Geode/Geode.hpp>
-#ifdef __APPLE__
-	#include "Hover.mm"
-#endif
 using namespace geode::prelude;
 
 void Hover::addHoverableItem(HoverItemBase *item) {
