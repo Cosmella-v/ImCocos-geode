@@ -81,26 +81,4 @@ class $modify(CCEGLView) {
 };
 #endif
 
-#ifdef __APPLE__
-// gaygpt said this would work, i don't belive it will but i have to see lol
-#import <Cocoa/Cocoa.h>
-class $modify(CCEGLView) {
-public:
-    - (void)viewDidMoveToWindow {
-        [super viewDidMoveToWindow];
-        [[self window] setAcceptsMouseMovedEvents:YES];
-    }
-    - (void)mouseMoved:(NSEvent *)event {
-        [super mouseMoved:event];
-        CGPoint pos = [event locationInWindow];
-        Hover::get()->updateHover(pos.x, pos.y);
-    }
-    - (void)mouseDragged:(NSEvent *)event {
-        [super mouseDragged:event];
-        CGPoint pos = [event locationInWindow];
-        Hover::get()->updateHover(pos.x, pos.y);
-    }
-};
-#endif
-
 
