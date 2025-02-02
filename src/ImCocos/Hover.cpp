@@ -78,4 +78,33 @@ class $modify(CCEGLView) {
 };
 #endif
 
+#ifdef GEODE_IS_ANDROID
+class TouchListener : public CCObject, public CCTouchDelegate {
+public:
+    virtual bool ccTouchBegan(CCTouch* touch, CCEvent* event) {
+        CCPoint location = touch->getLocation();
+        Hover::get()->updateHover(location.x, location.y);
+        return true; 
+    }
+
+    virtual void ccTouchMoved(CCTouch* touch, CCEvent* event) {
+        CCPoint location = touch->getLocation();
+        Hover::get()->updateHover(location.x, location.y);
+    }
+
+    virtual void ccTouchEnded(CCTouch* touch, CCEvent* event) {
+        Hover::get()->updateHover(-100000,-100000)
+    }
+
+    virtual void ccTouchCancelled(CCTouch* touch, CCEvent* event) {
+       Hover::get()->updateHover(-100000,-100000)
+    }
+};
+$on_mod(Loaded) {
+	TouchListener* listener = new TouchListener();
+	// do not swallowsTouches
+	CCDirector::sharedDirector()->getTouchDispatcher()->addTargetedDelegate(listener, 0, false);
+}
+#endif
+
 

@@ -1,3 +1,4 @@
+// most is from https://github.com/geode-sdk/MouseAPI/blob/479366791ad4e5bc3f9d13fa91e75381d4b6f43d/src/MacOS.mm
 #ifdef GEODE_IS_MACOS
 #include "Hover.hpp"
 #include <Geode/cocos/platform/mac/CCEventDispatcher.h>
