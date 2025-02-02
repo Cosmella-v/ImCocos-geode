@@ -83,27 +83,27 @@ class TouchListener : public CCObject, public CCTouchDelegate {
 public:
     virtual bool ccTouchBegan(CCTouch* touch, CCEvent* event) {
         CCPoint location = touch->getLocation();
-        Hover::get()->updateHover(location.x, location.y);
+        Hover::get()->updateHover(location);
         return true; 
     }
 
     virtual void ccTouchMoved(CCTouch* touch, CCEvent* event) {
         CCPoint location = touch->getLocation();
-        Hover::get()->updateHover(location.x, location.y);
+        Hover::get()->updateHover(location);
     }
 
     virtual void ccTouchEnded(CCTouch* touch, CCEvent* event) {
-        Hover::get()->updateHover(-100000,-100000)
+        Hover::get()->updateHover(ccp(-100000,-100000));
     }
 
     virtual void ccTouchCancelled(CCTouch* touch, CCEvent* event) {
-       Hover::get()->updateHover(-100000,-100000)
+       Hover::get()->updateHover(ccp(-100000,-100000));
     }
 };
 $on_mod(Loaded) {
 	TouchListener* listener = new TouchListener();
-	// do not swallowsTouches
-	CCDirector::sharedDirector()->getTouchDispatcher()->addTargetedDelegate(listener, 0, false);
+	// do not swallowsTouches, make sure it goes first lol
+	CCDirector::sharedDirector()->getTouchDispatcher()->addTargetedDelegate(listener, -1000, false);
 }
 #endif
 
