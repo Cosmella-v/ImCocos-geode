@@ -1,8 +1,6 @@
 // from https://github.com/Alphalaneous/Creative-Mode/blob/main/src/hooks/CCEGLView.hpp
 #include "Hover.hpp"
 #include <Geode/Geode.hpp>
-#include <Geode/modify/CCEGLView.hpp>
-
 using namespace geode::prelude;
 
 void Hover::addHoverableItem(HoverItemBase *item) {
@@ -70,6 +68,8 @@ void HoverItemBase::hover(CCObject *sender, CCPoint point, bool hovering) {
 };
 
 #ifdef GEODE_IS_WINDOWS
+// windows only
+#include <Geode/modify/CCEGLView.hpp>
 class $modify(CCEGLView) {
 	void onGLFWMouseMoveCallBack(GLFWwindow *w, double x, double y) {
 		CCEGLView::onGLFWMouseMoveCallBack(w, x, y);
@@ -77,3 +77,41 @@ class $modify(CCEGLView) {
 	}
 };
 #endif
+
+#ifdef __APPLE__
+// gaygpt said this would work, i don't belive it will but i have to see lol
+#import <Cocoa/Cocoa.h>
+class $modify(CCEGLView) {
+public:
+    - (void)viewDidMoveToWindow {
+        [super viewDidMoveToWindow];
+        [[self window] setAcceptsMouseMovedEvents:YES];
+    }
+    - (void)mouseMoved:(NSEvent *)event {
+        [super mouseMoved:event];
+        CGPoint pos = [event locationInWindow];
+        Hover::get()->updateHover(pos.x, pos.y);
+    }
+    - (void)mouseDragged:(NSEvent *)event {
+        [super mouseDragged:event];
+        CGPoint pos = [event locationInWindow];
+        Hover::get()->updateHover(pos.x, pos.y);
+    }
+};
+#endif
+
+#ifdef GEODE_IS_ANDROID
+auto listener = cocos2d::EventListenerTouchOneByOne::create();
+listener->onTouchBegan = [](cocos2d::Touch* touch, cocos2d::Event* event) -> bool {
+    auto location = touch->getLocation();
+    Hover::get()->updateHover(location.x, location.y);
+    return true;
+};
+listener->onTouchMoved = [](cocos2d::Touch* touch, cocos2d::Event* event) {
+    auto location = touch->getLocation();
+    Hover::get()->updateHover(location.x, location.y);
+};
+_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, yourTargetNode);
+#endif
+
+
