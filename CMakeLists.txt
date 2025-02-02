@@ -7,7 +7,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 project(ImCocos VERSION 1.0.0)
 
 file(GLOB_RECURSE SOURCES src/*.cpp)
-file(GLOB OBJC_SOURCES
+file(GLOB_RECURSE OBJC_SOURCES
     src/*.mm
 )
 
