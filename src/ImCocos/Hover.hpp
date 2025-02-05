@@ -6,6 +6,9 @@ class HoverItemBase : public CCMenuItemSprite {
 		virtual void hover(CCObject *sender, cocos2d::CCPoint point, bool hovering);
 };
 
+
+
+
 // from https://github.com/Alphalaneous/Creative-Mode/blob/main/src/hooks/CCEGLView.hpp
 class Hover {
   public:

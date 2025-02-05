@@ -1,13 +1,14 @@
+#pragma once
 #include <Geode/Geode.hpp>
 using namespace geode::prelude;
 #include "ImCocos.hpp"
+#include "ImScrollLayer.hpp"
+#include "ImCCDrawNode.hpp"
 
 class DraggableWindow : public CCLayer {
   public:
-	bool m_DragOnlyFromTopBar = true;
-
 	static DraggableWindow *create(const CCSize &size, float topBarHeight,
-	                               const ccColor4F &bgColor, const ccColor4F &topBarColor) {
+	                               const ccColor4B &bgColor, const ccColor4B &topBarColor) {
 		DraggableWindow *pRet = new DraggableWindow();
 		if (pRet && pRet->init(size, topBarHeight, bgColor, topBarColor)) {
 			pRet->autorelease();
@@ -17,8 +18,19 @@ class DraggableWindow : public CCLayer {
 		return NULL;
 	}
 
+	float m_topBarHeight;
+	bool m_resizing;
+	bool m_DragOnlyFromTopBar = true;
+	bool m_dragging;
+	IMCCDrawNode *m_drawNode;
+	IMCCDrawNode *m_drawNodeBar;
+	IMCCDrawNode *m_drawTriangle;
+	ImCocoScrollLayer *m_scrollLayer;
+	ccColor4B m_bgColor;
+	ccColor4B m_topBarColor;
+
 	bool init(const CCSize &size, float topBarHeight,
-	          const ccColor4F &bgColor, const ccColor4F &topBarColor) {
+	          const ccColor4B &bgColor, const ccColor4B &topBarColor) {
 		if (!CCLayer::init())
 			return false;
 
@@ -30,21 +42,36 @@ class DraggableWindow : public CCLayer {
 		m_topBarColor = topBarColor;
 		m_dragging = false;
 		m_resizing = false;
+		m_topbar = true;
+		m_Resizeable = true;
 
-		m_drawNode = CCDrawNode::create();
+		m_drawNode = IMCCDrawNode::create(Shapes::RectSquare,bgColor,CCRectMake(0, -m_size.height, m_size.width, m_size.height));
+		m_drawNode->setColor(bgColor);
+		m_drawNode->setID("background");
+		m_drawNodeBar = IMCCDrawNode::create(Shapes::RectSquare,topBarColor,CCRectMake(0, -m_topBarHeight, m_size.width, m_topBarHeight));
+		m_drawNodeBar->setColor(topBarColor);
+		m_drawNodeBar->setID("top-bar");
+		m_drawTriangle = IMCCDrawNode::create(Shapes::Custom,{127,127,127,127},CCRectMake(0, 0, 0, 0));
+		m_drawTriangle->setID("scale-triangle");
 		this->addChild(m_drawNode);
+		this->addChild(m_drawTriangle);
+		this->addChild(m_drawNodeBar);
 
-		m_scrollLayer = ScrollLayer::create(CCRectMake(0, -m_size.height, m_size.width, m_size.height - m_topBarHeight));
+		m_scrollLayer = ImCocoScrollLayer::create(CCRectMake(0, -m_size.height, m_size.width, m_size.height - m_topBarHeight),false,true);
 		m_scrollLayer->setAnchorPoint(ccp(0, 1));
 		m_scrollLayer->setPosition(ccp(0, -m_topBarHeight));
-        this->getScrollLayer()->setContentSize(CCSizeMake(m_size.width, m_size.height - m_topBarHeight));
         this->getScrollLayer()->setLayout(
-            RowLayout::create()
-            ->setGrowCrossAxis(true)
+            ColumnLayout::create()
+			->setAutoScale(false)
             ->setCrossAxisAlignment(geode::AxisAlignment::Start)
             ->setAxisAlignment(geode::AxisAlignment::Start)
             ->setCrossAxisLineAlignment(geode::AxisAlignment::Start)
         );
+		if (m_topbar) {
+			this->getScrollLayer()->setContentSize(CCSizeMake(m_size.width, m_size.height - m_topBarHeight));
+		} else {
+			this->getScrollLayer()->setContentSize(CCSizeMake(m_size.width, m_size.height));
+		};
 		this->addChild(m_scrollLayer);
 
 		redrawWindow();
@@ -53,8 +80,8 @@ class DraggableWindow : public CCLayer {
 
 		return true;
 	}
-	CCContentLayer *getScrollLayer() const {
-		return m_scrollLayer->m_contentLayer;
+	ImCocoContent* getScrollLayer() const {
+		return m_scrollLayer->m_ImCocoContent;
 	}
 
 	void drawResizeHandle() {
@@ -62,41 +89,65 @@ class DraggableWindow : public CCLayer {
 		CCPoint p1 = ccp(m_size.width, -m_size.height);
 		CCPoint p2 = ccp(m_size.width - handleSize, -m_size.height);
 		CCPoint p3 = ccp(m_size.width, -m_size.height + handleSize);
-		CCPoint vertices[] = {p1, p2, p3};
-		m_drawNode->drawPolygon(vertices, 3, ccc4f(0.5f, 0.5f, 0.5f, 0.5f), 1, ccc4f(0, 0, 0, 0));
+		m_drawTriangle->m_vertices = {p1, p2, p3};
+		m_drawTriangle->m_size = CCRectMake(0, 0, m_size.width, m_size.height);
+		m_drawTriangle->drawElement();
+		if (m_topbar) {
+			m_drawTriangle->setVisible(true);
+		} else {
+			m_drawTriangle->setVisible(false);
+		}
 	}
 
 	void redrawWindow() {
-		m_drawNode->clear();
 		CCRect windowRect = CCRectMake(0, -m_size.height, m_size.width, m_size.height);
-		IM_Cocos::drawModule::drawRectSquare(m_drawNode, windowRect, m_bgColor);
-
+		m_drawNode->setColor(m_bgColor);
+		m_drawNode->m_size = windowRect;
+		m_drawNode->drawElement();
 		CCRect topBarRect = CCRectMake(0, -m_topBarHeight, m_size.width, m_topBarHeight);
-		IM_Cocos::drawModule::drawRectSquare(m_drawNode, topBarRect, m_topBarColor);
-
+		m_drawNodeBar->setColor(m_topBarColor);
+		m_drawNodeBar->m_size = topBarRect;
+		m_drawNodeBar->drawElement();
+		if (m_topbar) {
+			m_drawNodeBar->setVisible(true);
+		} else {
+			m_drawNodeBar->setVisible(false);
+		}
 		drawResizeHandle();
 		if (m_scrollLayer) {
 			m_scrollLayer->setPositionY(-m_size.height);
-			m_scrollLayer->setContentSize(CCSizeMake(m_size.width, m_size.height - m_topBarHeight));
+			if (m_topbar) {
+				m_scrollLayer->setContentSize(CCSizeMake(m_size.width, m_size.height - m_topBarHeight));
+			} else {
+				m_scrollLayer->setContentSize(CCSizeMake(m_size.width, m_size.height));
+			};
 		}
 	}
 
 	virtual bool ccTouchBegan(CCTouch *touch, CCEvent *event) {
 		CCPoint localPoint = this->convertTouchToNodeSpace(touch);
-		float handleSize = 5.0f;
-		CCRect resizeRect = CCRectMake(m_size.width - handleSize, -m_size.height, handleSize, handleSize);
-		if (resizeRect.containsPoint(localPoint)) {
-			m_resizing = true;
-			m_resizeInitialLocal = localPoint;
-			m_originalSize = m_size;
-			return true;
+		if (m_Resizeable) {
+			float handleSize = 5.0f;
+			CCRect resizeRect = CCRectMake(m_size.width - handleSize, -m_size.height, handleSize, handleSize);
+			if (resizeRect.containsPoint(localPoint)) {
+				m_resizing = true;
+				m_resizeInitialLocal = localPoint;
+				m_originalSize = m_size;
+				return true;
+			}
 		}
-
-		if (localPoint.y < -m_topBarHeight) {
-			return false;
+		CCRect draggableRect;
+		if (m_DragOnlyFromTopBar) {
+			if (localPoint.y < -m_topBarHeight) {
+				return false;
+			}
+			draggableRect = CCRectMake(0, -m_topBarHeight, m_size.width, m_topBarHeight);
+		} else {
+			if (localPoint.y < -m_size.height) {
+				return false;
+			}
+			draggableRect = CCRectMake(0, -m_size.height, m_size.width, m_size.height);
 		}
-
-		CCRect draggableRect = CCRectMake(0, -m_topBarHeight, m_size.width, m_topBarHeight);
 		if (draggableRect.containsPoint(localPoint)) {
 			m_dragging = true;
 			m_touchOffset = ccpSub(this->getPosition(), touch->getLocation());
@@ -134,15 +185,25 @@ class DraggableWindow : public CCLayer {
 		CCDirector::sharedDirector()->getTouchDispatcher()->addTargetedDelegate(this, -9999, true);
 	}
 
-	CCSize m_size;
-	float m_topBarHeight;
-	bool m_dragging;
-	bool m_resizing;
-	CCPoint m_touchOffset;
-	CCSize m_originalSize;
-	CCPoint m_resizeInitialLocal;
-	ccColor4F m_bgColor;
-	ccColor4F m_topBarColor;
-	CCDrawNode *m_drawNode;
-	ScrollLayer *m_scrollLayer;
+	void setTopBarState(bool state) {
+		m_topbar = state;
+		redrawWindow();
+	};
+	bool getTopBarState() {
+		return m_topbar;
+	};
+	void setResizeState(bool state) {
+		m_Resizeable = state;
+		redrawWindow();
+	};
+	bool getResizeState() {
+		return m_Resizeable;
+	};
+	protected:
+		bool m_topbar;
+		bool m_Resizeable;
+		CCSize m_size;
+		CCPoint m_touchOffset;
+		CCSize m_originalSize;
+		CCPoint m_resizeInitialLocal;
 };
